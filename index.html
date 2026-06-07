@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lorenzo — Personal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#f3eee1;
+    --paper-raised:#faf6ec;
+    --ink:#211d18;
+    --ink-soft:#6c6258;
+    --accent:#c1583a;
+    --accent-soft:#ecd9cc;
+    --border:rgba(33,29,24,0.14);
+    --shadow:0 18px 44px -26px rgba(33,29,24,0.4);
+    --radius:14px;
+    --serif:'Fraunces', Georgia, serif;
+    --sans:'Hanken Grotesk', -apple-system, sans-serif;
+    --mono:'JetBrains Mono', monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.wordmark{ font-family:var(--serif); font-weight:600; letter-spacing:-0.01em; margin:0; }
+  a{ color:var(--accent); }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex; flex-wrap:wrap; align-items:center; gap:20px;
+    justify-content:space-between;
+    padding:22px clamp(20px, 5vw, 56px);
+    border-bottom:1px solid var(--border);
+    background:var(--paper-raised);
+  }
+  .wordmark{ font-size:1.6rem; }
+  .wordmark-accent{ color:var(--accent); }
+  nav{ display:flex; gap:6px; }
+  .tab-btn{
+    font-family:var(--sans); font-weight:600; font-size:0.95rem;
+    background:none; border:none; cursor:pointer;
+    color:var(--ink-soft); padding:10px 16px; border-radius:999px;
+    transition:background 0.2s ease, color 0.2s ease;
+  }
+  .tab-btn:hover{ color:var(--ink); }
+  .tab-btn.active{ background:var(--accent); color:#fff; }
+  .data-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .data-actions button{
+    font-family:var(--sans); font-size:0.85rem; font-weight:600;
+    border:1px solid var(--border); background:var(--paper);
+    color:var(--ink); padding:9px 16px; border-radius:999px; cursor:pointer;
+    transition:border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+  .data-actions button:hover{ border-color:var(--accent); color:var(--accent); }
+  .data-actions button.danger:hover{ border-color:#a8412c; color:#a8412c; background:#fbebe6; }
+
+  /* ---------- Layout ---------- */
+  main{ max-width:1180px; margin:0 auto; padding:clamp(24px, 5vw, 56px); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; animation:rise-in 0.4s cubic-bezier(.22,1,.36,1) both; }
+  .section-head{ margin-bottom:28px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  .section-head h1{ font-size:clamp(1.8rem, 4vw, 2.4rem); }
+  .lede{ color:var(--ink-soft); margin:6px 0 0; max-width:48ch; }
+  .subsection-title{ font-size:1.3rem; margin:44px 0 18px; }
+  .subsection-title:first-of-type{ margin-top:0; }
+
+  /* ---------- Stats ---------- */
+  .stats-row{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; margin-bottom:24px; }
+  .stat{
+    background:var(--paper-raised); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; box-shadow:var(--shadow);
+  }
+  .stat-value{ display:block; font-family:var(--mono); font-size:1.5rem; font-weight:600; color:var(--accent); }
+  .stat-label{ display:block; margin-top:4px; font-size:0.82rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; }
+
+  /* ---------- Cards & layout grid ---------- */
+  .layout-grid{ display:grid; grid-template-columns:minmax(260px, 360px) 1fr; gap:20px; margin-bottom:28px; }
+  @media (max-width:840px){ .layout-grid{ grid-template-columns:1fr; } }
+  .card{
+    background:var(--paper-raised); border:1px solid var(--border); border-radius:var(--radius);
+    padding:24px; box-shadow:var(--shadow);
+    animation:rise-in 0.5s cubic-bezier(.22,1,.36,1) both;
+  }
+  .card h2{ font-size:1.15rem; margin-bottom:16px; }
+  .chart-card{ display:flex; flex-direction:column; }
+  .chart-card-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .chart-card-head h2{ margin-bottom:0; }
+  .chart-wrap{ position:relative; height:280px; }
+
+  /* ---------- Forms ---------- */
+  form{ display:flex; flex-direction:column; gap:14px; }
+  label{ display:flex; flex-direction:column; gap:6px; font-size:0.85rem; font-weight:600; color:var(--ink-soft); }
+  .optional{ font-weight:400; text-transform:none; letter-spacing:0; }
+  .form-row{ display:flex; gap:14px; }
+  .form-row label{ flex:1; }
+  input[type="text"], input[type="number"], input[type="date"], select{
+    font-family:var(--sans); font-size:0.95rem; color:var(--ink);
+    background:var(--paper); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px; outline:none; transition:border-color 0.15s ease;
+  }
+  input[type="number"]{ font-family:var(--mono); }
+  input:focus, select:focus{ border-color:var(--accent); }
+  input[type="range"]{ accent-color:var(--accent); }
+  .btn-primary{
+    font-family:var(--sans); font-weight:700; font-size:0.95rem;
+    background:var(--accent); color:#fff; border:none; border-radius:999px;
+    padding:12px 22px; cursor:pointer; transition:filter 0.15s ease;
+  }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-secondary{
+    font-family:var(--sans); font-weight:700; font-size:0.88rem;
+    background:transparent; color:var(--accent); border:1.5px solid var(--accent);
+    border-radius:999px; padding:10px 20px; cursor:pointer; transition:background 0.15s ease, color 0.15s ease;
+    white-space:nowrap;
+  }
+  .btn-secondary:hover{ background:var(--accent); color:#fff; }
+  .btn-text{
+    font-family:var(--sans); font-size:0.82rem; font-weight:600;
+    background:none; border:none; color:var(--ink-soft); cursor:pointer; padding:4px 6px;
+    transition:color 0.15s ease;
+  }
+  .btn-text:hover{ color:var(--accent); }
+  .muted{ color:var(--ink-soft); font-size:0.88rem; }
+
+  /* ---------- Project cards ---------- */
+  .card-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+  .project-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .project-card h3{ font-size:1.05rem; }
+  .project-deadline{ display:block; margin-top:6px; font-family:var(--mono); font-size:0.78rem; color:var(--ink-soft); }
+  .project-deadline.muted{ font-style:italic; }
+  .badge{
+    font-family:var(--sans); font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+    padding:5px 11px; border-radius:999px; white-space:nowrap;
+  }
+  .badge-todo{ background:#e7e1d3; color:#6c6258; }
+  .badge-active{ background:var(--accent-soft); color:var(--accent); }
+  .badge-paused{ background:#ecdfc7; color:#9a7327; }
+  .badge-done{ background:#dde8da; color:#4c7a4a; }
+  .progress-row{ display:flex; align-items:center; gap:10px; margin-top:16px; }
+  .progress-track{ flex:1; height:8px; border-radius:999px; background:#e7e1d3; overflow:hidden; }
+  .progress-fill{ height:100%; background:var(--accent); border-radius:999px; transition:width 0.3s ease; }
+  .progress-input{ width:58px; text-align:right; padding:6px 8px; font-size:0.85rem; }
+  .unit{ font-family:var(--mono); font-size:0.82rem; color:var(--ink-soft); }
+  .project-card-actions{ margin-top:14px; display:flex; justify-content:flex-end; }
+
+  /* ---------- Weight list ---------- */
+  .weight-list{ margin-top:18px; max-height:260px; overflow-y:auto; }
+  .entry-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .entry-list li{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 10px; border-radius:8px; background:var(--paper);
+  }
+  .entry-date{ font-size:0.82rem; color:var(--ink-soft); }
+  .entry-value{ font-family:var(--mono); font-weight:600; }
+  .btn-delete-entry{ font-size:1.1rem; line-height:1; padding:2px 6px; }
+  .empty-state.small{ padding:14px 0 0; }
+
+  /* ---------- Upload card ---------- */
+  .upload-card{ margin-bottom:24px; }
+  .upload-card input[type="file"]{ font-family:var(--sans); font-size:0.85rem; margin-top:10px; }
+  .upload-status{ margin-top:10px; font-size:0.85rem; color:var(--ink-soft); }
+  .upload-status.error{ color:#a8412c; }
+
+  /* ---------- Empty states ---------- */
+  .empty-state{
+    text-align:center; color:var(--ink-soft); font-style:italic; padding:48px 20px;
+    border:1px dashed var(--border); border-radius:var(--radius); display:none;
+  }
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; left:50%; bottom:28px; transform:translate(-50%, 24px);
+    background:var(--ink); color:var(--paper-raised); font-size:0.9rem; font-weight:600;
+    padding:13px 24px; border-radius:999px; box-shadow:0 16px 40px -12px rgba(0,0,0,0.4);
+    opacity:0; pointer-events:none; transition:opacity 0.25s ease, transform 0.25s ease;
+    z-index:100;
+  }
+  #toast.show{ opacity:1; transform:translate(-50%, 0); }
+
+  /* ---------- Animation ---------- */
+  @keyframes rise-in{
+    from{ opacity:0; transform:translateY(16px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width:600px){
+    header{ flex-direction:column; align-items:flex-start; }
+    .form-row{ flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wordmark">Lorenzo<span class="wordmark-accent">.</span></div>
+  <nav>
+    <button class="tab-btn active" data-tab="productivity">Productivity</button>
+    <button class="tab-btn" data-tab="sport">Sport</button>
+  </nav>
+  <div class="data-actions">
+    <button id="btn-export">Export data</button>
+    <button id="btn-import">Import data</button>
+    <input type="file" id="file-import" accept="application/json" hidden>
+    <button id="btn-reset" class="danger">Reset data</button>
+  </div>
+</header>
+
+<main>
+  <section id="tab-productivity" class="tab-panel active">
+    <div class="section-head">
+      <div>
+        <h1>Productivity</h1>
+        <p class="lede">Track your projects, their status, and how far along each one is.</p>
+      </div>
+    </div>
+
+    <div class="stats-row" id="project-stats"></div>
+
+    <div class="layout-grid">
+      <div class="card form-card">
+        <h2>New project</h2>
+        <form id="project-form">
+          <label>Name
+            <input type="text" id="project-name" required maxlength="120" placeholder="e.g. Personal website redesign">
+          </label>
+          <div class="form-row">
+            <label>Deadline <span class="optional">(optional)</span>
+              <input type="date" id="project-deadline">
+            </label>
+            <label>Status
+              <select id="project-status">
+                <option value="todo">To start</option>
+                <option value="active" selected>In progress</option>
+                <option value="paused">Paused</option>
+                <option value="done">Completed</option>
+              </select>
+            </label>
+          </div>
+          <label>Progress: <span id="project-progress-value">0%</span>
+            <input type="range" id="project-progress" min="0" max="100" step="5" value="0">
+          </label>
+          <button type="submit" class="btn-primary">Add project</button>
+        </form>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Progress overview</h2>
+        <div class="chart-wrap"><canvas id="projects-chart"></canvas></div>
+        <p class="empty-state" id="projects-chart-empty">No projects yet — add your first one to see it charted here.</p>
+      </div>
+    </div>
+
+    <div class="card-list" id="projects-list"></div>
+    <p class="empty-state" id="projects-empty">No projects yet. Add one above to start tracking your work.</p>
+  </section>
+
+  <section id="tab-sport" class="tab-panel">
+    <div class="section-head">
+      <div>
+        <h1>Sport</h1>
+        <p class="lede">Weight trends and wearable recovery data, all in one place.</p>
+      </div>
+      <button id="btn-analyze" class="btn-secondary">Analyze with Claude</button>
+    </div>
+
+    <h2 class="subsection-title">Weight</h2>
+    <div class="stats-row" id="weight-stats"></div>
+    <div class="layout-grid">
+      <div class="card form-card">
+        <h2>Log a weigh-in</h2>
+        <form id="weight-form">
+          <label>Weight (kg)
+            <input type="number" id="weight-value" step="0.1" min="20" max="400" required placeholder="e.g. 78.4">
+          </label>
+          <label>Date
+            <input type="date" id="weight-date" required>
+          </label>
+          <button type="submit" class="btn-primary">Save</button>
+        </form>
+        <div class="weight-list" id="weight-list"></div>
+      </div>
+      <div class="card chart-card">
+        <h2>Trend</h2>
+        <div class="chart-wrap"><canvas id="weight-chart"></canvas></div>
+        <p class="empty-state" id="weight-chart-empty">No weigh-ins yet — log your weight to see a trend line appear here.</p>
+      </div>
+    </div>
+
+    <h2 class="subsection-title">Wearable</h2>
+    <div class="card upload-card">
+      <h2>Import data</h2>
+      <p class="muted">Upload a CSV export from Whoop, Garmin, Apple Health or Fitbit. Columns are matched automatically by name.</p>
+      <input type="file" id="wearable-file" accept=".csv,text/csv">
+      <p class="upload-status" id="wearable-status"></p>
+    </div>
+
+    <div class="stats-row" id="wearable-stats"></div>
+    <div class="card chart-card">
+      <div class="chart-card-head">
+        <h2>Metric over time</h2>
+        <select id="wearable-metric-select" disabled></select>
+      </div>
+      <div class="chart-wrap"><canvas id="wearable-chart"></canvas></div>
+      <p class="empty-state" id="wearable-chart-empty">No wearable data yet — upload a CSV to explore your metrics.</p>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var ACCENT = '#c1583a';
+  var INK_SOFT = '#9a8f81';
+  var FONT_MONO = "'JetBrains Mono', monospace";
+  var FONT_SANS = "'Hanken Grotesk', sans-serif";
+
+  /* ================= Store ================= */
+  var Store = (function(){
+    var KEY = 'lb-dashboard-v1';
+    var memoryFallback = null;
+    var usingMemory = false;
+
+    function defaults(){
+      return { projects: [], weight: [], wearable: null };
+    }
+
+    function read(){
+      if(usingMemory) return memoryFallback;
+      try {
+        var raw = localStorage.getItem(KEY);
+        if(!raw){
+          var d = defaults();
+          write(d);
+          return d;
+        }
+        var parsed = JSON.parse(raw);
+        return Object.assign(defaults(), parsed);
+      } catch(err){
+        usingMemory = true;
+        if(!memoryFallback) memoryFallback = defaults();
+        return memoryFallback;
+      }
+    }
+
+    function write(data){
+      if(usingMemory){ memoryFallback = data; return; }
+      try {
+        localStorage.setItem(KEY, JSON.stringify(data));
+      } catch(err){
+        usingMemory = true;
+        memoryFallback = data;
+      }
+    }
+
+    function load(){ return read(); }
+    function save(data){ write(data); }
+    function get(key){ return read()[key]; }
+    function set(key, value){
+      var data = read();
+      data[key] = value;
+      write(data);
+    }
+
+    function exportJSON(){
+      var data = read();
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'dashboard-data.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importJSON(file, callback){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        try {
+          var parsed = JSON.parse(e.target.result);
+          var merged = Object.assign(defaults(), parsed);
+          write(merged);
+          if(callback) callback(null, merged);
+        } catch(err){
+          if(callback) callback(err);
+        }
+      };
+      reader.onerror = function(){ if(callback) callback(reader.error); };
+      reader.readAsText(file);
+    }
+
+    function reset(){ write(defaults()); }
+
+    return { load: load, save: save, get: get, set: set, exportJSON: exportJSON, importJSON: importJSON, reset: reset };
+  })();
+
+  /* ================= Utilities ================= */
+  function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(ch){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch];
+    });
+  }
+
+  function todayISO(){
+    var d = new Date();
+    var off = d.getTimezoneOffset();
+    var local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function formatDate(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function formatDateShort(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  function statHTML(value, label){
+    return '<div class="stat"><span class="stat-value">' + value + '</span><span class="stat-label">' + escapeHtml(label) + '</span></div>';
+  }
+
+  var toastTimer = null;
+  function showToast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3200);
+  }
+
+  function staggerChildren(container){
+    Array.prototype.forEach.call(container.children, function(child, i){
+      child.style.animationDelay = (i * 60) + 'ms';
+    });
+  }
+
+  /* ================= Tabs ================= */
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  var tabPanels = document.querySelectorAll('.tab-panel');
+  Array.prototype.forEach.call(tabBtns, function(btn){
+    btn.addEventListener('click', function(){
+      var target = btn.getAttribute('data-tab');
+      Array.prototype.forEach.call(tabBtns, function(b){ b.classList.toggle('active', b === btn); });
+      Array.prototype.forEach.call(tabPanels, function(p){ p.classList.toggle('active', p.id === 'tab-' + target); });
+    });
+  });
+
+  /* ================= Math helpers ================= */
+  function computeEMA(values, alpha){
+    var result = [];
+    var prev = null;
+    for(var i = 0; i < values.length; i++){
+      if(prev === null){ prev = values[i]; }
+      else { prev = alpha * values[i] + (1 - alpha) * prev; }
+      result.push(prev);
+    }
+    return result;
+  }
+
+  function linearRegressionSlope(points){
+    var n = points.length;
+    if(n < 2) return null;
+    var sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    points.forEach(function(p){
+      sumX += p[0]; sumY += p[1]; sumXY += p[0] * p[1]; sumXX += p[0] * p[0];
+    });
+    var denom = (n * sumXX - sumX * sumX);
+    if(denom === 0) return null;
+    return (n * sumXY - sumX * sumY) / denom;
+  }
+
+  function computeWeeklyChange(sortedEntries, trendValues){
+    if(sortedEntries.length < 2) return null;
+    var lastDate = new Date(sortedEntries[sortedEntries.length - 1].date);
+    var cutoff = new Date(lastDate.getTime() - 14 * 24 * 60 * 60 * 1000);
+    var points = [];
+    for(var i = 0; i < sortedEntries.length; i++){
+      var d = new Date(sortedEntries[i].date);
+      if(d >= cutoff){
+        var days = (d - cutoff) / (24 * 60 * 60 * 1000);
+        points.push([days, trendValues[i]]);
+      }
+    }
+    var slope = linearRegressionSlope(points);
+    if(slope === null) return null;
+    return slope * 7;
+  }
+
+  /* ================= Productivity tab ================= */
+  var STATUS_LABELS = { todo: 'To start', active: 'In progress', paused: 'Paused', done: 'Completed' };
+  var STATUS_BADGE = { todo: 'badge-todo', active: 'badge-active', paused: 'badge-paused', done: 'badge-done' };
+
+  var projectsChart = null;
+
+  function projectCardHTML(p){
+    var deadlineHTML = p.deadline
+      ? '<span class="project-deadline">Due ' + escapeHtml(formatDate(p.deadline)) + '</span>'
+      : '<span class="project-deadline muted">No deadline</span>';
+    return '' +
+      '<article class="card project-card" data-id="' + p.id + '">' +
+        '<div class="project-card-top">' +
+          '<h3>' + escapeHtml(p.name) + '</h3>' +
+          '<span class="badge ' + STATUS_BADGE[p.status] + '">' + STATUS_LABELS[p.status] + '</span>' +
+        '</div>' +
+        deadlineHTML +
+        '<div class="progress-row">' +
+          '<div class="progress-track"><div class="progress-fill" style="width:' + p.progress + '%"></div></div>' +
+          '<input type="number" class="progress-input" min="0" max="100" step="5" value="' + p.progress + '">' +
+          '<span class="unit">%</span>' +
+        '</div>' +
+        '<div class="project-card-actions">' +
+          '<button type="button" class="btn-text" data-action="delete">Delete</button>' +
+        '</div>' +
+      '</article>';
+  }
+
+  function renderProjectStats(projects){
+    var count = projects.length;
+    var avg = count ? Math.round(projects.reduce(function(s, p){ return s + p.progress; }, 0) / count) : 0;
+    var completed = projects.filter(function(p){ return p.status === 'done'; }).length;
+    document.getElementById('project-stats').innerHTML =
+      statHTML(String(count), 'Projects') +
+      statHTML(count ? avg + '%' : '—', 'Avg. progress') +
+      statHTML(String(completed), 'Completed');
+  }
+
+  function renderProjectsChart(projects){
+    var canvas = document.getElementById('projects-chart');
+    var emptyEl = document.getElementById('projects-chart-empty');
+    if(!projects.length){
+      canvas.style.display = 'none';
+      emptyEl.style.display = 'block';
+      if(projectsChart){ projectsChart.destroy(); projectsChart = null; }
+      return;
+    }
+    canvas.style.display = 'block';
+    emptyEl.style.display = 'none';
+    var labels = projects.map(function(p){ return p.name; });
+    var data = projects.map(function(p){ return p.progress; });
+    if(projectsChart){
+      projectsChart.data.labels = labels;
+      projectsChart.data.datasets[0].data = data;
+      projectsChart.update();
+      return;
+    }
+    projectsChart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: ACCENT, borderRadius: 6, barThickness: 18 }] },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { min: 0, max: 100, ticks: { font: { family: FONT_MONO } }, grid: { color: 'rgba(33,29,24,0.08)' } },
+          y: { ticks: { font: { family: FONT_SANS } }, grid: { display: false } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx){ return ctx.parsed.x + '%'; } } }
+        }
+      }
+    });
+  }
+
+  function renderProductivity(){
+    var projects = Store.get('projects').slice().sort(function(a, b){ return b.createdAt - a.createdAt; });
+    renderProjectStats(projects);
+    renderProjectsChart(projects);
+    var list = document.getElementById('projects-list');
+    var empty = document.getElementById('projects-empty');
+    if(!projects.length){
+      list.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      list.innerHTML = projects.map(projectCardHTML).join('');
+      staggerChildren(list);
+    }
+  }
+
+  var projectForm = document.getElementById('project-form');
+  var progressSlider = document.getElementById('project-progress');
+  var progressValueLabel = document.getElementById('project-progress-value');
+  progressSlider.addEventListener('input', function(){
+    progressValueLabel.textContent = progressSlider.value + '%';
+  });
+
+  projectForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('project-name').value.trim();
+    if(!name) return;
+    var project = {
+      id: uid(),
+      name: name,
+      deadline: document.getElementById('project-deadline').value || null,
+      status: document.getElementById('project-status').value,
+      progress: parseInt(progressSlider.value, 10),
+      createdAt: Date.now()
+    };
+    var projects = Store.get('projects');
+    projects.push(project);
+    Store.set('projects', projects);
+    projectForm.reset();
+    progressSlider.value = 0;
+    progressValueLabel.textContent = '0%';
+    renderProductivity();
+    showToast('Project added');
+  });
+
+  document.getElementById('projects-list').addEventListener('click', function(e){
+    var card = e.target.closest('.project-card');
+    if(!card) return;
+    var id = card.getAttribute('data-id');
+    if(e.target.matches('[data-action="delete"]')){
+      if(confirm('Delete this project? This cannot be undone.')){
+        var projects = Store.get('projects').filter(function(p){ return p.id !== id; });
+        Store.set('projects', projects);
+        renderProductivity();
+        showToast('Project deleted');
+      }
+    }
+  });
+
+  document.getElementById('projects-list').addEventListener('change', function(e){
+    if(e.target.matches('.progress-input')){
+      var card = e.target.closest('.project-card');
+      var id = card.getAttribute('data-id');
+      var value = parseInt(e.target.value, 10);
+      if(isNaN(value)) value = 0;
+      value = Math.max(0, Math.min(100, value));
+      var projects = Store.get('projects');
+      var project = projects.find(function(p){ return p.id === id; });
+      if(project){
+        project.progress = value;
+        Store.set('projects', projects);
+        renderProductivity();
+      }
+    }
+  });
+
+  /* ================= Sport: Weight ================= */
+  var weightChart = null;
+
+  function renderWeightList(entries){
+    var list = document.getElementById('weight-list');
+    if(!entries.length){
+      list.innerHTML = '<p class="empty-state small" style="display:block; border:none; padding:14px 0 0;">No weigh-ins logged yet.</p>';
+      return;
+    }
+    var sorted = entries.slice().sort(function(a, b){ return a.date < b.date ? 1 : -1; });
+    list.innerHTML = '<ul class="entry-list">' + sorted.map(function(e){
+      return '<li>' +
+        '<span class="entry-date">' + escapeHtml(formatDate(e.date)) + '</span>' +
+        '<span class="entry-value">' + e.value.toFixed(1) + ' kg</span>' +
+        '<button type="button" class="btn-text btn-delete-entry" data-id="' + e.id + '" aria-label="Delete entry">×</button>' +
+      '</li>';
+    }).join('') + '</ul>';
+  }
+
+  function renderWeightChart(entries, trend){
+    var canvas = document.getElementById('weight-chart');
+    var labels = entries.map(function(e){ return formatDateShort(e.date); });
+    var raw = entries.map(function(e){ return e.value; });
+    if(weightChart){
+      weightChart.data.labels = labels;
+      weightChart.data.datasets[0].data = raw;
+      weightChart.data.datasets[1].data = trend;
+      weightChart.update();
+      return;
+    }
+    weightChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Weigh-ins',
+            data: raw,
+            showLine: false,
+            pointRadius: 3.5,
+            pointBackgroundColor: INK_SOFT,
+            pointBorderColor: 'transparent'
+          },
+          {
+            label: 'Trend (EMA)',
+            data: trend,
+            borderColor: ACCENT,
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            tension: 0.35
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, font: { family: FONT_MONO, size: 11 } }, grid: { display: false } },
+          y: { ticks: { font: { family: FONT_MONO } }, grid: { color: 'rgba(33,29,24,0.08)' } }
+        },
+        plugins: { legend: { position: 'bottom', labels: { font: { family: FONT_SANS }, boxWidth: 14 } } }
+      }
+    });
+  }
+
+  function renderWeight(){
+    var entries = Store.get('weight').slice().sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    renderWeightList(entries);
+
+    var statsEl = document.getElementById('weight-stats');
+    var chartEmpty = document.getElementById('weight-chart-empty');
+    var canvas = document.getElementById('weight-chart');
+
+    if(!entries.length){
+      statsEl.innerHTML = statHTML('—', 'Current weight') + statHTML('—', 'Trend weight') + statHTML('—', 'Weekly change');
+      canvas.style.display = 'none';
+      chartEmpty.style.display = 'block';
+      if(weightChart){ weightChart.destroy(); weightChart = null; }
+      return;
+    }
+
+    var values = entries.map(function(e){ return e.value; });
+    var trend = computeEMA(values, 0.15);
+    var current = values[values.length - 1];
+    var trendCurrent = trend[trend.length - 1];
+    var weeklyChange = computeWeeklyChange(entries, trend);
+
+    statsEl.innerHTML =
+      statHTML(current.toFixed(1) + ' kg', 'Current weight') +
+      statHTML(trendCurrent.toFixed(1) + ' kg', 'Trend weight') +
+      statHTML(weeklyChange === null ? '—' : (weeklyChange >= 0 ? '+' : '') + weeklyChange.toFixed(2) + ' kg/wk', 'Weekly change');
+
+    canvas.style.display = 'block';
+    chartEmpty.style.display = 'none';
+    renderWeightChart(entries, trend);
+  }
+
+  var weightForm = document.getElementById('weight-form');
+  document.getElementById('weight-date').value = todayISO();
+
+  weightForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var valueInput = document.getElementById('weight-value');
+    var dateInput = document.getElementById('weight-date');
+    var value = parseFloat(valueInput.value);
+    var date = dateInput.value || todayISO();
+    if(isNaN(value) || value <= 0) return;
+    var entries = Store.get('weight');
+    var idx = entries.findIndex(function(en){ return en.date === date; });
+    if(idx >= 0){ entries[idx].value = value; }
+    else { entries.push({ id: uid(), date: date, value: value }); }
+    Store.set('weight', entries);
+    weightForm.reset();
+    dateInput.value = todayISO();
+    renderWeight();
+    showToast('Weigh-in saved');
+  });
+
+  document.getElementById('weight-list').addEventListener('click', function(e){
+    if(e.target.matches('.btn-delete-entry')){
+      var id = e.target.getAttribute('data-id');
+      if(confirm('Delete this weigh-in?')){
+        var entries = Store.get('weight').filter(function(en){ return en.id !== id; });
+        Store.set('weight', entries);
+        renderWeight();
+        showToast('Entry deleted');
+      }
+    }
+  });
+
+  /* ================= Sport: Wearable ================= */
+  var METRIC_PATTERNS = [
+    { key: 'date', patterns: [/^date$/, /^day$/, /datum/, /^giorno$/] },
+    { key: 'recovery', patterns: [/recovery/, /recupero/] },
+    { key: 'hrv', patterns: [/hrv/, /heart.?rate.?variab/] },
+    { key: 'restingHr', patterns: [/resting.*heart/, /resting.*hr/, /^rhr$/] },
+    { key: 'sleep', patterns: [/sleep/, /sonno/] },
+    { key: 'strain', patterns: [/strain/, /sforzo/] },
+    { key: 'steps', patterns: [/steps?/, /passi/] },
+    { key: 'calories', patterns: [/cal(or)?(ies)?/, /kcal/] }
+  ];
+
+  var METRIC_LABELS = {
+    recovery: 'Recovery (%)',
+    hrv: 'HRV (ms)',
+    restingHr: 'Resting HR (bpm)',
+    sleep: 'Sleep (h)',
+    strain: 'Strain',
+    steps: 'Steps',
+    calories: 'Calories (kcal)'
+  };
+
+  function normalizeHeader(h){
+    return h.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  function matchColumns(headers){
+    var map = {};
+    headers.forEach(function(h, idx){
+      var norm = normalizeHeader(h);
+      for(var i = 0; i < METRIC_PATTERNS.length; i++){
+        var m = METRIC_PATTERNS[i];
+        if(map[m.key] !== undefined) continue;
+        if(m.patterns.some(function(p){ return p.test(norm); })){
+          map[m.key] = idx;
+          break;
+        }
+      }
+    });
+    return map;
+  }
+
+  function parseCSV(text){
+    var rows = [];
+    var row = [];
+    var field = '';
+    var inQuotes = false;
+    for(var i = 0; i < text.length; i++){
+      var ch = text[i];
+      if(inQuotes){
+        if(ch === '"'){
+          if(text[i + 1] === '"'){ field += '"'; i++; }
+          else { inQuotes = false; }
+        } else { field += ch; }
+      } else {
+        if(ch === '"'){ inQuotes = true; }
+        else if(ch === ','){ row.push(field); field = ''; }
+        else if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+        else if(ch === '\r'){ /* ignore */ }
+        else { field += ch; }
+      }
+    }
+    if(field.length || row.length){ row.push(field); rows.push(row); }
+    return rows.filter(function(r){ return r.length > 1 || (r.length === 1 && r[0].trim() !== ''); });
+  }
+
+  function normalizeDateString(raw){
+    raw = raw.trim();
+    var m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return m[1] + '-' + m[2] + '-' + m[3];
+    m = raw.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/);
+    if(m){
+      var a = parseInt(m[1], 10), b = parseInt(m[2], 10), y = m[3];
+      var day, month;
+      if(a > 12){ day = a; month = b; }
+      else if(b > 12){ day = b; month = a; }
+      else { day = a; month = b; }
+      return y + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    }
+    var d = new Date(raw);
+    if(!isNaN(d.getTime())){
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    return null;
+  }
+
+  function parseWearableCSV(text){
+    var rows = parseCSV(text);
+    if(rows.length < 2) return null;
+    var headers = rows[0];
+    var colMap = matchColumns(headers);
+    if(colMap.date === undefined) return null;
+    var entries = [];
+    for(var i = 1; i < rows.length; i++){
+      var r = rows[i];
+      if(!r || r[colMap.date] === undefined || !r[colMap.date].trim()) continue;
+      var date = normalizeDateString(r[colMap.date]);
+      if(!date) continue;
+      var entry = { date: date };
+      METRIC_PATTERNS.forEach(function(m){
+        if(m.key === 'date') return;
+        var idx = colMap[m.key];
+        if(idx !== undefined && r[idx] !== undefined && r[idx].trim() !== ''){
+          var num = parseFloat(r[idx].replace(',', '.').replace(/[^0-9.\-]/g, ''));
+          if(!isNaN(num)) entry[m.key] = num;
+        }
+      });
+      entries.push(entry);
+    }
+    entries.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    var recognizedKeys = Object.keys(colMap).filter(function(k){ return k !== 'date'; });
+    return { recognizedKeys: recognizedKeys, entries: entries };
+  }
+
+  function formatMetricValue(key, val){
+    if(key === 'sleep') return val.toFixed(1) + ' h';
+    if(key === 'recovery') return Math.round(val) + '%';
+    if(key === 'hrv') return Math.round(val) + ' ms';
+    if(key === 'restingHr') return Math.round(val) + ' bpm';
+    if(key === 'steps') return Math.round(val).toLocaleString('en-US');
+    if(key === 'calories') return Math.round(val) + ' kcal';
+    return String(val);
+  }
+
+  var wearableChart = null;
+
+  function renderWearableChart(entries, metricKey){
+    if(!metricKey) return;
+    var canvas = document.getElementById('wearable-chart');
+    var filtered = entries.filter(function(e){ return e[metricKey] !== undefined; });
+    var labels = filtered.map(function(e){ return formatDateShort(e.date); });
+    var values = filtered.map(function(e){ return e[metricKey]; });
+
+    if(wearableChart){
+      wearableChart.data.labels = labels;
+      wearableChart.data.datasets[0].data = values;
+      wearableChart.data.datasets[0].label = METRIC_LABELS[metricKey];
+      wearableChart.update();
+      return;
+    }
+
+    wearableChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: METRIC_LABELS[metricKey],
+          data: values,
+          borderColor: ACCENT,
+          backgroundColor: 'rgba(193,88,58,0.12)',
+          fill: true,
+          borderWidth: 2.5,
+          pointRadius: 2.5,
+          pointBackgroundColor: ACCENT,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, font: { family: FONT_MONO, size: 11 } }, grid: { display: false } },
+          y: { ticks: { font: { family: FONT_MONO } }, grid: { color: 'rgba(33,29,24,0.08)' } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  function renderWearable(){
+    var data = Store.get('wearable');
+    var statsEl = document.getElementById('wearable-stats');
+    var select = document.getElementById('wearable-metric-select');
+    var canvas = document.getElementById('wearable-chart');
+    var chartEmpty = document.getElementById('wearable-chart-empty');
+
+    if(!data || !data.entries || !data.entries.length){
+      statsEl.innerHTML = '';
+      select.innerHTML = '';
+      select.disabled = true;
+      canvas.style.display = 'none';
+      chartEmpty.style.display = 'block';
+      if(wearableChart){ wearableChart.destroy(); wearableChart = null; }
+      return;
+    }
+
+    var keys = data.recognizedKeys.filter(function(k){ return METRIC_LABELS[k]; });
+    var lastEntry = data.entries[data.entries.length - 1];
+
+    statsEl.innerHTML = keys.map(function(k){
+      var val = lastEntry[k];
+      return statHTML(val !== undefined ? formatMetricValue(k, val) : '—', METRIC_LABELS[k] + ' · latest');
+    }).join('');
+
+    var prevSelected = select.value;
+    select.innerHTML = keys.map(function(k){ return '<option value="' + k + '">' + METRIC_LABELS[k] + '</option>'; }).join('');
+    select.disabled = false;
+    if(keys.indexOf(prevSelected) !== -1) select.value = prevSelected;
+
+    canvas.style.display = 'block';
+    chartEmpty.style.display = 'none';
+    renderWearableChart(data.entries, select.value || keys[0]);
+  }
+
+  document.getElementById('wearable-metric-select').addEventListener('change', function(){
+    var data = Store.get('wearable');
+    if(data && data.entries) renderWearableChart(data.entries, this.value);
+  });
+
+  document.getElementById('wearable-file').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var statusEl = document.getElementById('wearable-status');
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var parsed = parseWearableCSV(ev.target.result);
+      if(!parsed || !parsed.entries.length){
+        statusEl.textContent = 'Could not recognize a date column in this file — check the format and try again.';
+        statusEl.classList.add('error');
+        return;
+      }
+      statusEl.textContent = 'Imported ' + parsed.entries.length + ' rows, recognized: ' + (parsed.recognizedKeys.map(function(k){ return METRIC_LABELS[k] || k; }).join(', ') || 'date only') + '.';
+      statusEl.classList.remove('error');
+      Store.set('wearable', parsed);
+      renderWearable();
+      showToast('Wearable data imported');
+    };
+    reader.onerror = function(){
+      statusEl.textContent = 'Could not read this file.';
+      statusEl.classList.add('error');
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  function renderSport(){
+    renderWeight();
+    renderWearable();
+  }
+
+  /* ================= Analyze with Claude ================= */
+  function buildSportSummary(){
+    var lines = [];
+    var weightEntries = Store.get('weight').slice().sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    if(weightEntries.length){
+      var values = weightEntries.map(function(e){ return e.value; });
+      var trend = computeEMA(values, 0.15);
+      var current = values[values.length - 1];
+      var trendCurrent = trend[trend.length - 1];
+      var weeklyChange = computeWeeklyChange(weightEntries, trend);
+      lines.push('PESO');
+      lines.push('- Peso attuale: ' + current.toFixed(1) + ' kg');
+      lines.push('- Peso di tendenza (media mobile esponenziale): ' + trendCurrent.toFixed(1) + ' kg');
+      lines.push('- Variazione settimanale stimata: ' + (weeklyChange === null ? 'n/d' : (weeklyChange >= 0 ? '+' : '') + weeklyChange.toFixed(2) + ' kg/settimana'));
+    } else {
+      lines.push('PESO: nessun dato registrato.');
+    }
+
+    lines.push('');
+
+    var wearable = Store.get('wearable');
+    if(wearable && wearable.entries && wearable.entries.length){
+      var keys = wearable.recognizedKeys.filter(function(k){ return METRIC_LABELS[k]; });
+      var recent = wearable.entries.slice(-14);
+      var lastRow = wearable.entries[wearable.entries.length - 1];
+      lines.push('WEARABLE (ultimi ' + recent.length + ' giorni)');
+      keys.forEach(function(k){
+        var vals = recent.map(function(e){ return e[k]; }).filter(function(v){ return v !== undefined; });
+        if(!vals.length) return;
+        var avg = vals.reduce(function(s, v){ return s + v; }, 0) / vals.length;
+        var last = lastRow[k];
+        lines.push('- ' + METRIC_LABELS[k] + ': media ' + avg.toFixed(1) + (last !== undefined ? ', ultimo valore ' + last.toFixed(1) : ''));
+      });
+    } else {
+      lines.push('WEARABLE: nessun dato caricato.');
+    }
+
+    return lines.join('\n');
+  }
+
+  function legacyCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  document.getElementById('btn-analyze').addEventListener('click', function(){
+    var summary = buildSportSummary();
+    var prompt = 'Ciao Claude! Ti incollo un riassunto dei miei dati sportivi (peso e wearable). ' +
+      'Analizza l\'andamento generale, il rapporto tra recupero e carico, eventuali segnali da tenere d\'occhio, ' +
+      'e dammi suggerimenti pratici e concreti per le prossime settimane.\n\n' +
+      '--- DATI ---\n' + summary;
+
+    function afterCopy(){
+      window.open('https://claude.ai', '_blank');
+      showToast('Dati copiati: incollali in Claude');
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(prompt).then(afterCopy, function(){
+        legacyCopy(prompt);
+        afterCopy();
+      });
+    } else {
+      legacyCopy(prompt);
+      afterCopy();
+    }
+  });
+
+  /* ================= Data actions ================= */
+  document.getElementById('btn-export').addEventListener('click', function(){
+    Store.exportJSON();
+    showToast('Data exported');
+  });
+
+  document.getElementById('btn-import').addEventListener('click', function(){
+    document.getElementById('file-import').click();
+  });
+
+  document.getElementById('file-import').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    Store.importJSON(file, function(err){
+      if(err){
+        showToast('Import failed: invalid file');
+      } else {
+        renderProductivity();
+        renderSport();
+        showToast('Data imported');
+      }
+    });
+    e.target.value = '';
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function(){
+    if(confirm('Reset all data? This will permanently delete all your projects, weigh-ins and wearable data.')){
+      Store.reset();
+      renderProductivity();
+      renderSport();
+      showToast('Data reset');
+    }
+  });
+
+  /* ================= Init ================= */
+  renderProductivity();
+  renderSport();
+})();
+</script>
+</body>
+</html>
